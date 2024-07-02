@@ -3,9 +3,10 @@ import { ref, reactive, provide } from 'vue'
 import appTable from '@/components/appTable.vue'
 import Pagination from '@/components/Pagination.vue'
 import { TableConfig } from './config/index'
-import { getMonthCardList, getMonthCardRate } from '@/api/car/monthCard/index'
+import { getMonthCardList, getMonthCardRate, deleteMonthCard } from '@/api/car/monthCard/index'
 import type { MonthCarItem, MonthCarParams, Proportion } from '@/api/car/monthCard/type'
 import router from '@/router'
+import { ElMessage } from 'element-plus'
 
 const monthCarQuery = reactive<MonthCarParams>({
   page: 1,
@@ -65,6 +66,35 @@ const handleCurrentChange = (val: number) => {
   monthCarQuery.page = val
   getMonthCard()
 }
+const ids = ref<string[]>([])
+const getIds = (val: any) => {
+  ids.value = val
+  console.log(ids.value)
+}
+const handelAllDel = async () => {
+  const res = await deleteMonthCard({ ids: ids.value.toString() })
+  if (res.code === 10000) {
+    ElMessage.success('删除成功')
+    getMonthCard()
+  }
+}
+const handelDel = async (ids: number | string) => {
+  const res = await deleteMonthCard({ ids })
+  if (res.code === 10000) {
+    ElMessage.success('删除成功')
+    getMonthCard()
+  }
+}
+const handelEdit = (type: { type: string; title: string; id: string | number }) => {
+  router.push({
+    name:'MonthCardCom',
+    params: {
+      type:type.type,
+      title:type.title,
+      query:type.id
+    }
+  })
+}
 provide('getMonthCard', getMonthCard)
 </script>
 
@@ -94,14 +124,19 @@ provide('getMonthCard', getMonthCard)
         <el-button class="btn" @click="handelAddMonthCard({ type: 'add', title: '添加月卡' })"
           >添加月卡</el-button
         >
-        <el-button class="btn">批量删除</el-button>
+        <el-button class="btn" @click="handelAllDel">批量删除</el-button>
       </div>
       <el-tag type="primary" v-if="proportion"
         >本园区共计 {{ proportion.spaceNumber }} 个车位，月卡用户 0 人，车位占有率
         {{ proportion.proportion }}</el-tag
       >
     </div>
-    <appTable :tableConfig="TableConfig" selection="selection" :enterpriseList="monthCardList">
+    <appTable
+      :tableConfig="TableConfig"
+      selection="selection"
+      :enterpriseList="monthCardList"
+      @getIds="getIds"
+    >
       <template #operate="{ row }">
         <el-button
           link
@@ -115,8 +150,13 @@ provide('getMonthCard', getMonthCard)
           @click="handelCheck({ type: 'check', title: '查看月卡', id: row.id })"
           >查看</el-button
         >
-        <el-button link type="primary">编辑</el-button>
-        <el-button link type="primary">删除</el-button>
+        <el-button
+          link
+          type="primary"
+          @click="handelEdit({ type: 'edit', title: '编辑月卡', id: row.id })"
+          >编辑</el-button
+        >
+        <el-button link type="primary" @click="handelDel(row.id)">删除</el-button>
       </template>
       <template #status="{ row }">
         <span>{{ row.cardStatus === 1 ? '已过期' : '可用' }}</span>

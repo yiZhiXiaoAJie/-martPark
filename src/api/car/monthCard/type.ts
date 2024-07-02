@@ -32,14 +32,16 @@ export interface Proportion {
 
 
 export interface addMonthCardParams {
-    carBrand: string;
-    cardEndDate: string;
-    cardStartDate: string;
-    carNumber: string;
+    carBrand?: string;
+    cardEndDate?: string;
+    cardStartDate?: string;
+    carNumber?: string;
     paymentAmount: string;
     paymentMethod: string;
-    personName: string;
-    phoneNumber: string;
+    personName?: string;
+    phoneNumber?: string;
+    carInfoId?: string | number
+    rechargeId?: string | number
 }
 
 
@@ -61,4 +63,14 @@ export interface RechargeList {
     paymentAmount: number;
     paymentMethod: string;
     rechargeId: number;
+}
+
+
+
+export interface renewMonthCardQuery {
+    cardEndDate: string;
+    cardStartDate: string;
+    carInfoId: number |string;
+    paymentAmount: string;
+    paymentMethod: string;
 }

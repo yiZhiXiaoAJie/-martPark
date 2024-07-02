@@ -3,8 +3,18 @@ import type { FormInstance } from 'element-plus'
 import { ref, reactive, inject } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage, dayjs } from 'element-plus'
-import { addMonthCard, getMonthCardDetail } from '@/api/car/monthCard/index'
-import type { addMonthCardParams, CheckData, RechargeList } from '@/api/car/monthCard/type'
+import {
+  addMonthCard,
+  getMonthCardDetail,
+  renewMonthCard,
+  editMonthCard
+} from '@/api/car/monthCard/index'
+import type {
+  addMonthCardParams,
+  CheckData,
+  RechargeList,
+  renewMonthCardQuery
+} from '@/api/car/monthCard/type'
 import appTable from '@/components/appTable.vue'
 import router from '@/router'
 import { tableConfig } from './config/index'
@@ -22,29 +32,42 @@ const formQuery = reactive<addMonthCardParams>({
   cardStartDate: '',
   cardEndDate: '',
   paymentAmount: '',
-  paymentMethod: ''
+  paymentMethod: '',
+  carInfoId:'',
+  rechargeId:''
 })
 const { type, title, query } = (() => {
-  console.log(route.params.query);
-  
+  console.log(route.params.query)
+
   const type = ref(route.params.type)
   const title = ref(route.params.title)
   const query = type.value === 'check' ? route.params.query : undefined
   if (type.value === 'check') {
-    getMonthCardDetail({ Id:route.params.query}).then((res) => {
+    getMonthCardDetail({ Id: route.params.query }).then((res) => {
       checkList.value = res.data
       rechargeList.value = res.data.rechargeList
       console.log(res)
     })
   }
   if (type.value === 'renewal') {
-    console.log(query);
-    
-    getMonthCardDetail({ Id: route.params.query}).then((res) => {
+    getMonthCardDetail({ Id: route.params.query }).then((res) => {
       formQuery.personName = res.data.personName
       formQuery.phoneNumber = res.data.phoneNumber
       formQuery.carNumber = res.data.carNumber
       formQuery.carBrand = res.data.carBrand
+    })
+  }
+  if (type.value === 'edit') {
+    getMonthCardDetail({ Id: route.params.query }).then((res) => {
+      formQuery.personName = res.data.personName
+      formQuery.phoneNumber = res.data.phoneNumber
+      formQuery.carNumber = res.data.carNumber
+      formQuery.carBrand = res.data.carBrand
+      time.value = [res.data.rechargeList[0].cardStartDate, res.data.rechargeList[0].cardEndDate]
+      formQuery.paymentAmount = res.data.rechargeList[0].paymentAmount
+      formQuery.paymentMethod = res.data.rechargeList[0].paymentMethod
+      formQuery.carInfoId = route.params.query 
+      formQuery.rechargeId = res.data.rechargeList[0].rechargeId
     })
   }
   return {
@@ -61,7 +84,7 @@ const defaultTime = ref<[Date, Date]>([
   new Date(2000, 1, 1, 0, 0, 0),
   new Date(2000, 2, 1, 23, 59, 59)
 ])
-const time = ref('')
+const time = ref<string | string[]>('')
 
 const formTopRef = ref<FormInstance>()
 const formButtonRef = ref<FormInstance>()
@@ -97,7 +120,13 @@ const resetForm = () => {
   formButtonRef.value?.resetFields()
   time.value = ''
 }
-
+const checkQuery = reactive<renewMonthCardQuery>({
+  cardStartDate: '',
+  cardEndDate: '',
+  paymentAmount: '',
+  paymentMethod: '',
+  carInfoId: ''
+})
 const handelSubmit = () => {
   const list = [checkForm(formTopRef.value!), checkForm(formButtonRef.value!)]
   Promise.all(list).then(async (res) => {
@@ -106,6 +135,38 @@ const handelSubmit = () => {
         const res = await addMonthCard(formQuery)
         if (res.code === 10000) {
           ElMessage.success('添加成功')
+          router.back()
+          getMonthCard()
+        }
+      }
+    } catch (error: any) {
+      ElMessage.error(error.response.data.msg)
+    }
+    try {
+      console.log(type)
+
+      if (type === 'renewal') {
+        checkQuery.cardStartDate = formQuery.cardStartDate!
+        checkQuery.cardEndDate = formQuery.cardEndDate!
+        checkQuery.paymentAmount = formQuery.paymentAmount!
+        checkQuery.paymentMethod = formQuery.paymentMethod
+        checkQuery.carInfoId = route.params.query as string
+
+        const res = await renewMonthCard(checkQuery)
+        if (res.code === 10000) {
+          ElMessage.success('续费成功')
+          router.back()
+          getMonthCard()
+        }
+      }
+    } catch (error: any) {
+      ElMessage.error(error.response.data.msg)
+    }
+    try {
+      if (type === 'edit') {
+        const res = await editMonthCard(formQuery)
+        if (res.code === 10000) {
+          ElMessage.success('编辑成功')
           router.back()
           getMonthCard()
         }

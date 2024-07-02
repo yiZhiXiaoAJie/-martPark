@@ -1,20 +1,32 @@
 <script lang="ts" setup>
-import { defineProps } from 'vue'
+import { defineProps,ref } from 'vue'
 import { type Row } from '@/api/park/enterprise/type'
 import type { TableConfig, TableSonConfig } from '@/views/park/enterprise/config/type'
-withDefaults(
+const prop = withDefaults(
   defineProps<{
     enterpriseList?: any[]
     tableConfig?: TableConfig[]
     tableSonConfig?: TableSonConfig[]
     expand?: string
     border?: boolean
-    selection?:string
+    selection?: string
   }>(),
   {
     border: false
   }
 )
+const emit =  defineEmits(['getIds'])
+const ids = ref<string []>([])
+const handelSelectionChange = (val: any) => {
+  // console.log(val);
+  
+  ids.value = []
+  val.forEach((item:any) => {
+    ids.value.push(item.id)
+  })
+  emit('getIds',ids.value)
+}
+
 </script>
 
 <template>
@@ -30,6 +42,7 @@ withDefaults(
       'text-align': 'center'
     }"
     :cell-style="{ textAlign: 'center' }"
+    @select="handelSelectionChange"
   >
     <template v-if="expand">
       <el-table-column type="expand">
